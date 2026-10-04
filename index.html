@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOUSUMI — NASA-powered Crop Rotation Advisor for Bangladesh</title>
+<meta name="description" content="MOUSUMI helps Bangladeshi farmers adapt crop rotations to shifting seasons, water scarcity and soil salinity using NASA Earth observations. NASA Space Apps Challenge 2026 — Field Shift: Adapting Farms with NASA Data.">
+<style>
+:root{
+  --navy:#0b2545; --navy2:#13315c; --teal:#1b998b; --green:#2d6a4f; --green-l:#d8f3dc;
+  --amber:#e9c46a; --red:#c14953; --bg:#f6f9f7; --card:#ffffff; --ink:#1b2a41;
+  --muted:#5c6b73; --line:#dde5e0; --blue:#2a6f97; --sand:#f4a261;
+  --shadow:0 2px 10px rgba(11,37,69,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Noto Sans','Hind Siliguri',Segoe UI,system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55}
+header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 60%,#1d4e6b 100%);color:#fff;padding:18px 28px;display:flex;flex-wrap:wrap;align-items:center;gap:14px;position:sticky;top:0;z-index:50;box-shadow:var(--shadow)}
+.h-logo{width:46px;height:46px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#37b0a2,#0e5f56);display:flex;align-items:center;justify-content:center;font-size:22px;flex:none;border:2px solid rgba(255,255,255,.35)}
+.h-title{flex:1;min-width:220px}
+.h-title h1{font-size:1.35rem;letter-spacing:.5px;line-height:1.2}
+.h-title .sub{font-size:.78rem;opacity:.85;margin-top:2px}
+.h-badge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);padding:5px 12px;border-radius:20px;font-size:.72rem;text-align:center;line-height:1.35}
+.lang-btn{background:var(--teal);border:none;color:#fff;padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:600;font-size:.85rem}
+.lang-btn:hover{background:#17796e}
+nav{background:#fff;border-bottom:1px solid var(--line);display:flex;justify-content:center;gap:4px;padding:0 12px;flex-wrap:wrap;position:sticky;top:82px;z-index:40}
+nav button{background:none;border:none;border-bottom:3px solid transparent;padding:12px 18px;font-size:.92rem;font-weight:600;color:var(--muted);cursor:pointer}
+nav button.active{color:var(--green);border-bottom-color:var(--green)}
+nav button:hover{color:var(--green)}
+main{max-width:1180px;margin:0 auto;padding:22px 18px 60px}
+.tab{display:none}
+.tab.active{display:block}
+.card{background:var(--card);border-radius:14px;padding:20px 22px;box-shadow:var(--shadow);border:1px solid var(--line);margin-bottom:18px}
+.card h2{font-size:1.12rem;color:var(--navy);margin-bottom:6px}
+.card h3{font-size:.98rem;color:var(--navy);margin:12px 0 6px}
+.note{font-size:.8rem;color:var(--muted)}
+.grid{display:grid;gap:14px}
+.g4{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.kpi{background:linear-gradient(180deg,#fff, #f4faf6);border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center}
+.kpi .v{font-size:1.45rem;font-weight:700;color:var(--navy)}
+.kpi .l{font-size:.72rem;color:var(--muted);margin-top:2px}
+.kpi .s{font-size:.68rem;color:var(--teal);margin-top:2px}
+select,option{font-family:inherit}
+select{padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:#fff;font-size:.9rem;color:var(--ink);max-width:100%}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:.75rem;color:var(--muted);margin-top:8px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.dot{width:11px;height:11px;border-radius:50%;display:inline-block}
+/* map */
+#mapwrap{position:relative}
+#map{width:100%;height:auto;background:linear-gradient(160deg,#eaf4f0,#f7fbf8);border-radius:10px;border:1px solid var(--line)}
+.tip{position:absolute;pointer-events:none;background:var(--navy);color:#fff;padding:8px 11px;border-radius:8px;font-size:.78rem;opacity:0;transition:opacity .12s;max-width:230px;z-index:30;line-height:1.4}
+/* charts */
+.chart{width:100%;overflow:visible}
+.chart text{font-family:inherit}
+/* rotation cards */
+.rot{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;background:#fff;position:relative;transition:box-shadow .15s}
+.rot:hover{box-shadow:0 4px 14px rgba(11,37,69,.13)}
+.rot.top{border-left:5px solid var(--teal)}
+.rot.bau{border-left:5px solid var(--sand);background:#fffdf5}
+.rot .seq{font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:6px}
+.rot .seq .arrow{color:var(--teal);padding:0 4px}
+.rot .bnname{font-size:.82rem;color:var(--green)}
+.metrics{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-size:.8rem}
+.metrics b{color:var(--navy)}
+.delta{font-size:.78rem;margin-top:6px;color:var(--green);font-weight:600}
+.delta.neg{color:var(--red)}
+.scorebar{height:8px;background:#e8efe9;border-radius:6px;overflow:hidden;margin-top:9px}
+.scorebar div{height:100%;background:linear-gradient(90deg,var(--teal),var(--green));border-radius:6px}
+.badge{display:inline-block;font-size:.66rem;font-weight:700;padding:3px 9px;border-radius:12px;letter-spacing:.4px}
+.b-teal{background:var(--green-l);color:var(--green)}
+.b-sand{background:#fdeedc;color:#b26b2a}
+.b-red{background:#f8e3e5;color:var(--red)}
+.b-blue{background:#e2eef5;color:var(--blue)}
+.b-navy{background:#e7ebf2;color:var(--navy)}
+table{border-collapse:collapse;width:100%;font-size:.82rem}
+th,td{border:1px solid var(--line);padding:7px 9px;text-align:left}
+th{background:#eef5f0;color:var(--navy);font-size:.78rem}
+tr:nth-child(even) td{background:#fafcfb}
+.methods li{margin:6px 0 6px 18px;font-size:.9rem}
+.methods p{margin:8px 0;font-size:.9rem}
+.sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-top:10px}
+.sliders label{font-size:.8rem;font-weight:600;color:var(--navy);display:block;margin-bottom:4px}
+.sliders .wv{color:var(--teal);font-weight:700}
+input[type=range]{width:100%;accent-color:var(--teal)}
+footer{background:var(--navy);color:#cfd8e3;padding:26px 20px;text-align:center;font-size:.8rem;line-height:1.7}
+footer b{color:#fff}
+.eq{background:#f2f7f4;border-left:4px solid var(--teal);padding:10px 14px;margin:10px 0;font-family:'Noto Sans Math',Georgia,serif;font-size:.95rem;overflow-x:auto}
+.warn{background:#fdf6e7;border-left:4px solid var(--sand);padding:12px 14px;border-radius:0 8px 8px 0;font-size:.85rem;margin:10px 0}
+.warn b{color:#9c5c17}
+.hero{background:linear-gradient(120deg,#0b2545 0%,#134e4a 100%);color:#fff;border-radius:14px;padding:26px 28px;margin-bottom:18px}
+.hero h2{font-size:1.3rem;color:#fff;margin-bottom:8px}
+.hero p{font-size:.92rem;opacity:.92;max-width:880px}
+.hero .stats{display:flex;gap:26px;margin-top:16px;flex-wrap:wrap}
+.hero .stat b{display:block;font-size:1.5rem;color:var(--amber)}
+.hero .stat span{font-size:.72rem;opacity:.85}
+.flag{color:var(--amber);font-weight:600;font-size:.72rem}
+@media(max-width:700px){nav{top:0;position:relative}header{position:relative}.h-title h1{font-size:1.05rem}}
+</style>
+</head>
+<body>
+<header>
+  <div class="h-logo">🌾</div>
+  <div class="h-title">
+    <h1 id="hTitle">MOUSUMI <span style="font-weight:400;font-size:.9rem" id="hSub">— Farming with the Shifting Seasons</span></h1>
+    <div class="sub" id="hTag">NASA-powered crop rotation advisor for Bangladesh · 64 districts · NASA POWER 1981–2025</div>
+  </div>
+  <div class="h-badge" id="hBadge">NASA Space Apps 2026<br><b>Field Shift: Adapting Farms<br>with NASA Data</b></div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()">বাংলা</button>
+</header>
+
+<nav>
+  <button id="tab-map" class="active" onclick="showTab('map')" data-en="Climate Map" data-bn="জলবায়ু মানচিত্র">Climate Map</button>
+  <button id="tab-district" onclick="showTab('district')" data-en="District Dashboard" data-bn="জেলা ড্যাশবোর্ড">District Dashboard</button>
+  <button id="tab-rotation" onclick="showTab('rotation')" data-en="Rotation Explorer" data-bn="ফসল পরিকল্পনা">Rotation Explorer</button>
+  <button id="tab-methods" onclick="showTab('methods')" data-en="Data & Methods" data-bn="ডেটা ও পদ্ধতি">Data &amp; Methods</button>
+</nav>
+
+<main>
+<!-- ============================ MAP TAB ============================ -->
+<section id="pane-map" class="tab active">
+  <div class="hero">
+    <h2 id="heroTitle">Bangladesh's farming seasons are shifting. MOUSUMI shows where — and what to plant next.</h2>
+    <p id="heroText">Using 45 years of NASA Earth observations (NASA POWER agroclimatology), MOUSUMI maps how rainfall, heat and salinity pressure are changing across all 64 districts, and turns that science into practical crop-rotation guidance for farmers and extension officers — in English and Bangla.</p>
+    <div class="stats">
+      <div class="stat"><b>64</b><span data-en="districts covered" data-bn="জেলা আচ্ছাদিত">districts covered</span></div>
+      <div class="stat"><b>45</b><span data-en="years of NASA data (1981–2025)" data-bn="বছরের নাসা ডেটা (১৯৮১–২০২৫)">years of NASA data (1981–2025)</span></div>
+      <div class="stat"><b>15+</b><span data-en="crops in rotation engine" data-bn="ফসল পরিকল্পনা ইঞ্জিনে">crops in rotation engine</span></div>
+      <div class="stat"><b>2</b><span data-en="languages: English + বাংলা" data-bn="ভাষা: বাংলা + English">languages: English + বাংলা</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <h2 id="mapTitle">Climate &amp; Risk Indicators by District</h2>
+      <select id="mapIndicator" onchange="drawMap()">
+        <option value="salinity" data-en="Soil salinity risk class" data-bn="মাটির লবণাত্তরের ঝুঁকি">Soil salinity risk class</option>
+        <option value="rabi_rain" data-en="Rabi season rainfall — Nov–Mar (mm)" data-bn="রবি মৌসুমের বৃষ্টিপাত — নভে–মার্চ (মিমি)">Rabi season rainfall — Nov–Mar (mm)</option>
+        <option value="heat" data-en="Extreme heat days per year (Tmax ≥ 35°C)" data-bn="অতি উষ্ণ দিন প্রতি বছর (তাপমাত্রা ≥ ৩৫°সে)">Extreme heat days per year (Tmax ≥ 35°C)</option>
+        <option value="onset" data-en="Monsoon rain onset (day of year)" data-bn="বর্ষার সূচনা (বছরের দিন)">Monsoon rain onset (day of year)</option>
+        <option value="water_deficit" data-en="Rabi water deficit (ETo − rainfall, mm)" data-bn="রবি মৌসুমে পানির ঘাটতি (মিমি)">Rabi water deficit (ETo − rainfall, mm)</option>
+      </select>
+    </div>
+    <div id="mapwrap">
+      <svg id="map" viewBox="0 0 980 560" role="img" aria-label="Bangladesh district climate map"></svg>
+      <div class="tip" id="mapTip"></div>
+    </div>
+    <div class="legend" id="mapLegend"></div>
+    <p class="note" id="mapNote">Circle position = district centroid (real coordinates). Circle colour = indicator level. Click a district to open its dashboard. Neighbouring districts inside the same NASA POWER grid cell (0.5° × 0.625°) share identical values.</p>
+  </div>
+</section>
+
+<!-- ======================== DISTRICT TAB ========================== -->
+<section id="pane-district" class="tab">
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <h2 id="distTitle" style="margin:0">District Dashboard</h2>
+      <select id="districtSelect" onchange="CURRENT=this.value;renderDistrict()"></select>
+    </div>
+    <div id="zoneBadges"></div>
+  </div>
+
+  <div class="grid g4" id="kpiCards"></div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h2 id="wcTitle">The Water Calendar — rain vs crop water demand</h2>
+      <p class="note" id="wcNote">Monthly rainfall (bars) and reference evapotranspiration ETo (line) for 2016–2025. The dry-season gap between the ETo line and the rainfall bars is what crops must bridge with irrigation — or avoid through crop choice.</p>
+      <svg class="chart" id="chartWater" viewBox="0 0 520 300"></svg>
+    </div>
+    <div class="card">
+      <h2 id="mcTitle">The Monsoon Calendar</h2>
+      <p class="note" id="mcNote">When monsoon rains reliably start (onset) and end (withdrawal), from daily NASA rainfall. The band shows the safe transplanting window for rainfed T. Aman rice.</p>
+      <svg class="chart" id="chartMonsoon" viewBox="0 0 520 300"></svg>
+    </div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h2 id="rrTitle">Rabi (dry season) rainfall, 2011–2025</h2>
+      <p class="note" id="rrNote">Recent tendencies tested with the Mann-Kendall test and Theil-Sen slope. Indicative only — see Data &amp; Methods for why we do not extrapolate the full 45-year reanalysis record.</p>
+      <svg class="chart" id="chartRabi" viewBox="0 0 520 260"></svg>
+    </div>
+    <div class="card">
+      <h2 id="hdTitle">Extreme heat days (Tmax ≥ 35°C), 2011–2025</h2>
+      <p class="note" id="hdNote">Days hot enough to sterilise rice flowers (Yoshida 1981). Recent decade average shown; 35°C at flowering is the critical threshold for Boro and T. Aman.</p>
+      <svg class="chart" id="chartHeat" viewBox="0 0 520 260"></svg>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 id="fullTitle">Full NASA POWER record, 1981–2025 (transparency view)</h2>
+    <p class="note" id="fullNote">We show the complete 45-year series — and the audit table below — because our homogeneity check found large multi-decadal discontinuities in NASA POWER over this region. Our advisory engine therefore uses the recent window (2016–2025) for current conditions. This is scientific transparency, not a weakness: always audit your data before telling farmers the climate has changed.</p>
+    <svg class="chart" id="chartFull" viewBox="0 0 1080 240"></svg>
+    <h3 id="auditTitle">Homogeneity audit — decadal means (this district)</h3>
+    <div style="overflow-x:auto"><table id="auditTable"></table></div>
+  </div>
+</section>
+
+<!-- ======================= ROTATION TAB =========================== -->
+<section id="pane-rotation" class="tab">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+      <h2 id="rotTitle">Rotation Explorer — what should this field grow next?</h2>
+      <select id="rotDistrict" onchange="CURRENT=this.value;renderRotations()"></select>
+    </div>
+    <p class="note" id="rotNote">Move the sliders to tell MOUSUMI what matters most to you — saving water, fighting salinity, income, soil health, or lowering risk. Every plan is scored live from your district's NASA data, your soil salinity (editable below), FAO-56 water balance and FAO-29 crop salt-tolerance science.</p>
+    <div class="sliders" id="slidersBox"></div>
+    <div style="margin-top:12px;font-size:.85rem">
+      <label><span data-en="Your measured soil salinity" data-bn="আপনার মাপা মাটির লবণাত্তর">Your measured soil salinity</span> (dS/m):
+        <input type="number" id="soilSal" min="0.5" max="20" step="0.1" style="width:80px;padding:4px 6px;border:1px solid var(--line);border-radius:6px" onchange="recomputeSalinity()">
+      </label>
+      <span class="note" id="salDefaultNote"></span>
+    </div>
+  </div>
+  <div id="rotCards"></div>
+</section>
+
+<!-- ======================== METHODS TAB =========================== -->
+<section id="pane-methods" class="tab">
+  <div class="card methods">
+    <h2 id="mTitle">Data &amp; Methods — the science behind MOUSUMI</h2>
+    <p id="mIntro">MOUSUMI is built for the NASA Space Apps 2026 challenge <b>“Field Shift: Adapting Farms with NASA Data.”</b> It is a decision-support tool that combines NASA Earth observations with local soil information, crop characteristics and farmer priorities to explore rotation strategies that strengthen soil health and adapt farms to changing conditions — exactly as the challenge asks.</p>
+
+    <h3 id="mDataTitle">1. NASA data sources</h3>
+    <ul>
+      <li><b>NASA POWER v8 (Agroclimatology)</b> — primary data source. Monthly (7 parameters, 1981–2025) and daily (rainfall, Tmax) products for all 64 district centroids, retrieved live from the official POWER API: <i>https://power.larc.nasa.gov</i> (Stackhouse et al., NASA Langley Research Center).</li>
+      <li>Parameters used: PRECTOTCORR (corrected precipitation), T2M (2 m air temperature), T2M_MAX (daily), RH2M (relative humidity), WS2M (wind speed), ALLSKY_SFC_SW_DWN (surface solar radiation).</li>
+      <li><b>Complementary NASA missions</b> documented for extension (see README): GPM IMERG rainfall, SMAP soil moisture, MODIS/VIIRS vegetation &amp; temperature, NASA Earthdata/Worldview — for validation and richer monitoring as the tool grows.</li>
+    </ul>
+
+    <h3 id="mWaterTitle">2. Water balance — FAO-56</h3>
+    <p>Reference evapotranspiration is computed with the <b>FAO-56 Penman-Monteith</b> equation (Allen et al. 1998) at monthly step from NASA POWER inputs. Monthly mean daily-maximum temperature is computed from the POWER daily product (we verified empirically that POWER's monthly T2M_MAX is a monthly extreme, not a mean — see audit below). Monthly mean daily-minimum temperature is estimated as <i>Tmin ≈ 2·T2M − Tmax</i> (documented approximation). Crop water use is ETc = Kc × ETo with FAO-56 crop coefficients; effective rainfall uses the FAO AGLW monthly method (Pe = 0.6P if P&lt;70 mm, else 0.8P−24).</p>
+    <div class="eq">ETo = [0.408·Δ·(Rn − G) + γ·(900/(T+273))·u₂·(eₛ − eₐ)] / [Δ + γ·(1 + 0.34·u₂)]</div>
+
+    <h3 id="mSalTitle">3. Soil salinity — local information + FAO-29 science</h3>
+    <p>District baseline salinities are compiled from the SRDI (Soil Resource Development Institute, Bangladesh) salinity survey as reported in Dasgupta et al. (2015, World Bank Policy Research Working Paper 7140). Users can — and should — replace them with their own soil-test values (input box in the Rotation Explorer). Crop salt tolerance follows the <b>Maas-Hoffman</b> piecewise model: relative yield = 100% up to the threshold ECt, then falls by slope b% per dS/m (Ayers &amp; Westcot 1985, FAO I&amp;D Paper 29; BRRI variety documentation for salt-tolerant rice such as BRRI dhan67, 8–10 dS/m at vegetative stage).</p>
+    <div class="eq">Y<sub>rel</sub> = 100 − b·(EC<sub>e</sub> − EC<sub>t</sub>)&nbsp;&nbsp;(when EC<sub>e</sub> &gt; EC<sub>t</sub>)</div>
+
+    <h3 id="mTrendTitle">4. Trend analysis — Mann-Kendall + Theil-Sen</h3>
+    <p>Recent tendencies (2011–2025) are tested with the non-parametric <b>Mann-Kendall</b> test (tie-corrected) and <b>Theil-Sen</b> slope estimator, reported with p-values. Monsoon onset is the first day after 25 May with ≥60 mm accumulated in 10 days AND ≥40 mm in the following 10 days (persistence filter against pre-monsoon thunderstorms); withdrawal is the last day after 15 Sep in a 10-day window with ≥60 mm.</p>
+
+    <h3 id="mAuditTitle">5. Data audit — why we don't claim 45-year trends</h3>
+    <div class="warn"><b>Scientific integrity note.</b> Our homogeneity audit of NASA POWER v8 over Bangladesh reveals large multi-decadal discontinuities: decadal mean rainfall for the Sylhet grid cell roughly doubles from 1981–90 to 2021–25, and 1980s daily Tmax is warm-biased by ~2–3 °C versus gauge climatology. These are known limitations of reanalysis-based products in the tropics. Consequences: (1) current-condition modelling uses the recent 10-year window (2016–2025); (2) tendencies are computed over 2011–2025 and labelled indicative; (3) long-term change direction is cited from peer-reviewed literature (IPCC AR6; Bangladesh climate studies; World Bank salinity projections) rather than extrapolated from an inhomogeneous reanalysis; (4) the full record stays visible for transparency. We believe a trustworthy advisory tool must audit its data — this table is shown for every district in the District Dashboard.</div>
+
+    <h3 id="mRotTitle">6. Rotation engine</h3>
+    <p>Feasible annual sequences are assembled from Bangladesh's three cropping seasons (Kharif-2 Jul–Oct, Rabi Nov–Apr, Kharif-1 Apr–Jun) across 15 crops (rice varieties incl. salt-tolerant BRRI dhan67, wheat, maize, potato, mustard, lentil, chickpea, onion, sunflower, groundnut, sesame, mungbean, jute, fallow). Each plan is scored on irrigation need (mm), salinity-adjusted expected yield and gross margin, heat risk in sensitive windows, soil-health effects (legume credit, continuous-cereal penalty), and family diversity. Farmer-priority sliders re-weight the score live. Gross margins are indicative 2023–25 farm-gate estimates and are editable — local calibration is a feature, not an admission of weakness.</p>
+
+    <h3 id="mAssumpTitle">7. Assumptions &amp; limitations (honest list)</h3>
+    <ul>
+      <li>POWER grid resolution is 0.5° × 0.625° (~50–60 km): neighbouring districts in one cell share values; district-level precision comes from user soil inputs, not the grid.</li>
+      <li>Salinity envelope: rabi peak ≈ 1.35 × baseline, monsoon-leached ≈ 0.55 × baseline — a first-order seasonalisation of the salt cycle; full salt-transport modelling is future work.</li>
+      <li>Gross margins are indicative and location-sensitive; users should calibrate with local DAE/BBS figures.</li>
+      <li>Indicative salinity thresholds (flagged in the crop table) apply where FAO-29 does not tabulate a crop; users can replace any value.</li>
+      <li>MOUSUMI is a planning-support tool for exploration and education, not a substitute for professional agronomic advice.</li>
+    </ul>
+
+    <h3 id="mRefsTitle">8. Key references</h3>
+    <ul>
+      <li>Allen, R.G., Pereira, L.S., Raes, D., Smith, M. (1998). <i>Crop evapotranspiration — Guidelines for computing crop water requirements.</i> FAO Irrigation &amp; Drainage Paper 56.</li>
+      <li>Ayers, R.S., Westcot, D.W. (1985). <i>Water quality for agriculture.</i> FAO I&amp;D Paper 29. (Crop salt-tolerance tables.)</li>
+      <li>Maas, E.V., Hoffman, G.J. (1977). Crop salt tolerance — current assessment. <i>J. Irrig. Drain. Div.</i> 103(IR2):115–134.</li>
+      <li>Mann, H.B. (1945). Econometrica 13:245–259; Kendall, M.G. (1975). <i>Rank Correlation Methods</i>; Sen, P.K. (1968). JASA 63:1379–1389.</li>
+      <li>Dasgupta, S., Hossain, M.M., Huq, M., Wheeler, D. (2015). <i>Climate change, soil salinity, and the economics of high-yield rice production in coastal Bangladesh.</i> World Bank Policy Research Working Paper 7140.</li>
+      <li>SRDI (2010). <i>Saline soils of Bangladesh</i>. Soil Resource Development Institute, Ministry of Agriculture.</li>
+      <li>Yoshida, S. (1981). <i>Fundamentals of rice crop science.</i> IRRI. (35 °C anthesis-sterility threshold.)</li>
+      <li>BRRI (2014–2024). Variety leaflets incl. BRRI dhan67 (salt-tolerant Boro, 8–10 dS/m vegetative stage).</li>
+      <li>Stackhouse, P.W. et al. NASA POWER v8, NASA Langley Research Center. https://power.larc.nasa.gov</li>
+      <li>IPCC (2022). AR6 WGII, Chapter 10: Asia. (Regional climate-change context.)</li>
+    </ul>
+  </div>
+</section>
+</main>
+
+<footer>
+  <b>MOUSUMI</b> · <span id="fTeam">Team Cou_Black_Forest — Sakhawat Hossen &amp; Shamim Hasan · Cumilla, Bangladesh</span><br>
+  <span id="fEvent">NASA Space Apps Challenge 2026 — Challenge: Field Shift: Adapting Farms with NASA Data</span><br>
+  <span id="fData">Data: NASA POWER v8 (NASA Langley Research Center) · Science: FAO-56, FAO-29, Maas-Hoffman, Mann-Kendall/Sen · Built with ❤️ for the farmers of the Bengal Delta</span>
+</footer>
+<script src="data/processed/mousumi_data.js"></script>
+<script>
+/* ================= MOUSUMI dashboard logic (zero dependencies) ============ */
+"use strict";
+const DATA = window.MOUSUMI_DATA;
+const BN = "bn", EN = "en";
+let LANG = EN;
+let CURRENT = "Cumilla";
+
+/* ---------------------- i18n ---------------------- */
+const I18N = {
+  hTitle: {bn: "মৌসুমী", en: "MOUSUMI"},
+  hSub: {bn: "— বদলে যাওয়া ঋতুর সাথে চাষাবাদ", en: "— Farming with the Shifting Seasons"},
+  hTag: {bn: "নাসার ডেটা দিয়ে বাংলাদেশের ফসল পরিকল্পনা · ৬৪ জেলা · NASA POWER ১৯৮১–২০২৫", en: "NASA-powered crop rotation advisor for Bangladesh · 64 districts · NASA POWER 1981–2025"},
+  heroTitle: {bn: "বাংলাদেশের চাষের মৌসুম বদলে যাচ্ছে। মৌসুমী দেখায় কোথায় — আর এবার কী বুনবেন।", en: "Bangladesh's farming seasons are shifting. MOUSUMI shows where — and what to plant next."},
+  heroText: {bn: "নাসার ৪৫ বছরের পর্যবেক্ষণ (NASA POWER) ব্যবহার করে মৌসুমী মানচিত্র আঁকে বৃষ্টি, উষ্ণতা ও লবণাত্তরের চিত্র — তারপর সেই বিজ্ঞানকে কৃষক ও কৃষি সম্প্রসারণ কর্মীদের জন্য বাস্তব ফসল-পরিকল্পনায় রূপ দেয়, বাংলা ও ইংরেজিতে।", en: "Using 45 years of NASA Earth observations (NASA POWER agroclimatology), MOUSUMI maps how rainfall, heat and salinity pressure are changing across all 64 districts, and turns that science into practical crop-rotation guidance for farmers and extension officers — in English and Bangla."},
+  mapTitle: {bn: "জেলা অনুযায়ী জলবায়ু ও ঝুঁকির সূচক", en: "Climate & Risk Indicators by District"},
+  distTitle: {bn: "জেলা ড্যাশবোর্ড", en: "District Dashboard"},
+  rotTitle: {bn: "ফসল পরিকল্পনা — এই জমিতে এরপর কী চাষ করবেন?", en: "Rotation Explorer — what should this field grow next?"},
+  wcTitle: {bn: "পানির ক্যালেন্ডার — বৃষ্টি বনাম ফসলের পানির চাহিদা", en: "The Water Calendar — rain vs crop water demand"},
+  mcTitle: {bn: "বর্ষার ক্যালেন্ডার", en: "The Monsoon Calendar"},
+  rrTitle: {bn: "রবি মৌসুমের বৃষ্টিপাত, ২০১১–২০২৫", en: "Rabi (dry season) rainfall, 2011–2025"},
+  hdTitle: {bn: "অতি উষ্ণ দিন (তাপমাত্রা ≥ ৩৫°সে), ২০১১–২০২৫", en: "Extreme heat days (Tmax ≥ 35°C), 2011–2025"},
+  fullTitle: {bn: "নাসা POWER-এর সম্পূর্ণ রেকর্ড, ১৯৮১–২০২৫ (স্বচ্ছতা দৃশ্য)", en: "Full NASA POWER record, 1981–2025 (transparency view)"},
+  kpiRain: {bn: "রবি বৃষ্টি (নভে–মার্চ)", en: "Rabi rainfall (Nov–Mar)"},
+  kpiHeat: {bn: "উষ্ণ দিন/বছর (সাম্প্রতিক দশক)", en: "Hot days/yr (last decade)"},
+  kpiOnset: {bn: "বর্ষার সূচনা (গড়)", en: "Monsoon onset (avg)"},
+  kpiSal: {bn: "লবণাত্তর ঝুঁকি", en: "Salinity risk"},
+  kpiEto: {bn: "রবি ETo (ফসলের চাহিদা)", en: "Rabi ETo (crop demand)"},
+  kpiBase: {bn: "মূল লবণাত্তর", en: "Baseline salinity"},
+  currentPractice: {bn: "বর্তমান প্রচলিত পদ্ধতি", en: "CURRENT PRACTICE"},
+  vsBau: {bn: "বনাম বর্তমান প্রচলিত পদ্ধতি", en: "vs current practice"},
+  irrigation: {bn: "সেচ", en: "irrigation"},
+  salYield: {bn: "লবণ-সমন্বয়িত ফলন", en: "salinity-adjusted yield"},
+  income: {bn: "প্রত্যাশিত আয়", en: "expected income"},
+  soilH: {bn: "মাটির স্বাস্থ্য", en: "soil health"},
+  heatRisk: {bn: "তাপ ঝুঁকি", en: "heat risk"},
+  score: {bn: "স্কোর", en: "score"},
+  high: {bn: "উচ্চ", en: "High"}, low: {bn: "নিম্ন", en: "Low"},
+  vhigh: {bn: "অতি উচ্চ", en: "Very High"}, mod: {bn: "মাঝারি", en: "Moderate"},
+  lm: {bn: "কম-মাঝারি", en: "Low-Moderate"},
+  wWater: {bn: "পানি সাশ্রয়", en: "Water saving"},
+  wSal: {bn: "লবণ সহনশীলতা", en: "Salinity survival"},
+  wProfit: {bn: "আয়", en: "Income"},
+  wSoil: {bn: "মাটির স্বাস্থ্য", en: "Soil health"},
+  wRisk: {bn: "ঝুঁকি কম", en: "Lower risk"},
+  rainMM: {bn: "বৃষ্টি (মিমি)", en: "Rain (mm)"},
+  etoMM: {bn: "ETo (মিমি/মাস)", en: "ETo (mm/month)"},
+};
+const MONTHS_EN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTHS_BN = ["জানু","ফেব্রু","মার্চ","এপ্রি","মে","জুন","জুলা","আগ","সেপ্টে","অক্টো","নভে","ডিসে"];
+function t(k){const e=I18N[k];return e?e[LANG]:k}
+function bnNum(n){return String(n).replace(/[0-9]/g,d=>"০১২৩৪৫৬৭৮৯"[+d])}
+function fmt(n,d=0){return LANG===BN?bnNum(Number(n).toFixed(d)):Number(n).toFixed(d)}
+
+/* ---------------------- crop library (mirror of crop_library.py) -------- */
+const CROPS = {
+  t_aman:{en:"T. Aman rice",bn:"আমন ধান",family:"cereal",slot:"k2",sow:7.0,harv:11.5,kc:1.10,ect:3.0,b:12.0,salSrc:"fao29",irr:"rainfed",gm:55000,soil:0.0,heatW:[9.5,10.5],heatS:1.0},
+  k2_fallow:{en:"Fallow (K2)",bn:"পতিত (খরিফ-২)",family:"fallow",slot:"k2",sow:7.0,harv:11.5,kc:0,ect:99,b:0,salSrc:"n/a",irr:"none",gm:0,soil:-0.5,heatW:[0,0],heatS:0},
+  boro_hyv:{en:"Boro rice (HYV)",bn:"বোরো ধান (উচ্চ ফলনশীল)",family:"cereal",slot:"rabi",sow:12.5,harv:4.5,kc:1.15,ect:3.0,b:12.0,salSrc:"fao29",irr:"full",gm:75000,soil:-0.2,heatW:[3.0,4.5],heatS:1.5},
+  boro_salt:{en:"Boro rice (salt-tolerant)",bn:"বোরো ধান (লবণ সহিষ্ণু)",family:"cereal",slot:"rabi",sow:12.5,harv:4.5,kc:1.15,ect:8.0,b:12.0,salSrc:"brri",irr:"full",gm:68000,soil:-0.2,heatW:[3.0,4.5],heatS:1.5},
+  wheat:{en:"Wheat",bn:"গম",family:"cereal",slot:"rabi",sow:11.5,harv:3.5,kc:0.80,ect:6.0,b:7.1,salSrc:"fao29",irr:"partial",gm:55000,soil:-0.1,heatW:[2.5,3.5],heatS:1.8},
+  maize:{en:"Maize (winter)",bn:"ভুট্টা (রবি)",family:"cereal",slot:"rabi",sow:11.5,harv:4.0,kc:0.95,ect:1.7,b:12.0,salSrc:"fao29",irr:"partial",gm:95000,soil:-0.1,heatW:[3.0,4.0],heatS:1.6},
+  potato:{en:"Potato",bn:"আলু",family:"tuber",slot:"rabi",sow:11.0,harv:2.0,kc:0.85,ect:1.7,b:12.0,salSrc:"fao29",irr:"partial",gm:130000,soil:-0.1,heatW:[1.5,2.0],heatS:1.0},
+  mustard:{en:"Mustard",bn:"সরিষা",family:"oilseed",slot:"rabi",sow:11.0,harv:1.5,kc:0.75,ect:5.0,b:14.0,salSrc:"indicative",irr:"light",gm:65000,soil:0.0,heatW:[1.0,1.5],heatS:0.8},
+  lentil:{en:"Lentil",bn:"মসুর ডাল",family:"legume",slot:"rabi",sow:11.5,harv:3.0,kc:0.70,ect:1.5,b:20.0,salSrc:"indicative",irr:"none",gm:52000,soil:1.5,heatW:[2.5,3.0],heatS:1.0},
+  chickpea:{en:"Chickpea",bn:"ছোলা",family:"legume",slot:"rabi",sow:11.5,harv:3.0,kc:0.70,ect:1.3,b:14.0,salSrc:"indicative",irr:"none",gm:48000,soil:1.5,heatW:[2.5,3.0],heatS:1.0},
+  onion:{en:"Onion",bn:"পিঁয়াজ",family:"vegetable",slot:"rabi",sow:11.5,harv:3.5,kc:0.85,ect:1.2,b:16.0,salSrc:"fao29",irr:"partial",gm:150000,soil:-0.1,heatW:[3.0,3.5],heatS:0.8},
+  sunflower:{en:"Sunflower",bn:"সূর্যমুখী",family:"oilseed",slot:"rabi",sow:12.0,harv:4.0,kc:0.85,ect:4.5,b:12.0,salSrc:"indicative",irr:"light",gm:72000,soil:0.0,heatW:[3.0,4.0],heatS:0.8},
+  groundnut:{en:"Groundnut",bn:"চিনাবাদাম",family:"legume",slot:"rabi",sow:1.0,harv:4.5,kc:0.75,ect:3.2,b:29.0,salSrc:"fao29",irr:"light",gm:85000,soil:1.2,heatW:[4.0,4.5],heatS:0.6},
+  sesame:{en:"Sesame",bn:"তিল",family:"oilseed",slot:"rabi",sow:11.0,harv:2.0,kc:0.65,ect:2.5,b:14.0,salSrc:"indicative",irr:"none",gm:45000,soil:0.0,heatW:[1.5,2.0],heatS:0.5},
+  rabi_fallow:{en:"Fallow (Rabi)",bn:"পতিত (রবি)",family:"fallow",slot:"rabi",sow:11.0,harv:4.5,kc:0,ect:99,b:0,salSrc:"n/a",irr:"none",gm:0,soil:-0.8,heatW:[0,0],heatS:0},
+  mungbean:{en:"Mungbean",bn:"মুগ ডাল",family:"legume",slot:"k1",sow:4.0,harv:6.0,kc:0.70,ect:2.0,b:15.0,salSrc:"indicative",irr:"none",gm:58000,soil:1.5,heatW:[5.5,6.0],heatS:0.8},
+  jute:{en:"Jute",bn:"পাট",family:"fiber",slot:"k1",sow:4.0,harv:7.0,kc:0.95,ect:3.0,b:14.0,salSrc:"indicative",irr:"none",gm:78000,soil:-0.2,heatW:[6.0,7.0],heatS:0.4},
+  k1_fallow:{en:"Fallow (K1)",bn:"পতিত (খরিফ-১)",family:"fallow",slot:"k1",sow:4.0,harv:6.5,kc:0,ect:99,b:0,salSrc:"n/a",irr:"none",gm:0,soil:-0.3,heatW:[0,0],heatS:0},
+};
+function monthsSpan(sow,harv){const out=[];let m=Math.floor(sow),end=Math.floor(harv);for(let i=0;i<=12;i++){out.push(((m-1)%12)+1);if(m===end)break;m=(m%12)+1}return out}
+function effRain(p){return p<70?0.6*p:0.8*p-24}
+function maas(ect,b,ece){return ece<=ect?100:Math.max(0,100-b*(ece-ect))}
+
+/* ---------------------- state & helpers ---------------------- */
+const districts = DATA.districts;
+const byName = Object.fromEntries(districts.map(d=>[d.name,d]));
+function getD(){return byName[CURRENT]}
+
+/* ---------------------- tabs & language ---------------------- */
+function showTab(id){
+  document.querySelectorAll(".tab").forEach(e=>e.classList.remove("active"));
+  document.getElementById("pane-"+id).classList.add("active");
+  document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
+  document.getElementById("tab-"+id).classList.add("active");
+  if(id==="map") drawMap();
+  if(id==="district") renderDistrict();
+  if(id==="rotation") renderRotations();
+}
+function toggleLang(){
+  LANG = LANG===EN?BN:EN;
+  document.getElementById("langBtn").textContent = LANG===EN?"বাংলা":"English";
+  applyI18n(); showTab(document.querySelector("nav button.active").id.replace("tab-",""));
+}
+function applyI18n(){
+  document.getElementById("hTitle").firstChild.textContent = t("hTitle")+" ";
+  document.getElementById("hSub").textContent = t("hSub");
+  document.getElementById("hTag").textContent = t("hTag");
+  document.getElementById("heroTitle").textContent = t("heroTitle");
+  document.getElementById("heroText").textContent = t("heroText");
+  document.querySelectorAll("[data-en]").forEach(el=>{
+    const v = LANG===BN?el.getAttribute("data-bn"):el.getAttribute("data-en");
+    if(v) el.textContent=v;
+  });
+  ["mapTitle","distTitle","rotTitle","wcTitle","mcTitle","rrTitle","hdTitle","fullTitle"].forEach(k=>{
+    const el=document.getElementById(k); if(el) el.textContent=t(k);
+  });
+  ["mapNote","wcNote","mcNote","rrNote","hdNote","fullNote","rotNote","salDefaultNote"].forEach(k=>{
+    const el=document.getElementById(k);
+    if(el && el.getAttribute("data-noteen")) el.textContent = LANG===BN?el.getAttribute("data-notebn"):el.getAttribute("data-noteen");
+  });
+}
+
+/* ---------------------- SVG chart helpers ---------------------- */
+const NS="http://www.w3.org/2000/svg";
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e}
+function txt(svg,x,y,s,attrs={}){const e=el("text",Object.assign({x,y,"font-size":11,fill:"#5c6b73"},attrs),svg);e.textContent=s;return e}
+function clear(svg){while(svg.firstChild)svg.removeChild(svg.firstChild)}
+function niceTicks(min,max,n=4){if(min===max){min-=1;max+=1}const step=Math.pow(10,Math.floor(Math.log10((max-min)/n)));const err=(max-min)/n/step;const mult=err>=7.5?10:err>=3.5?5:err>=1.5?2:1;const s=step*mult;const lo=Math.floor(min/s)*s,hi=Math.ceil(max/s)*s;const ticks=[];for(let v=lo;v<=hi+1e-9;v+=s)ticks.push(+v.toFixed(10));return{ticks,lo,hi}}
+
+/* line chart with optional bars & trend */
+function comboChart(svg,{bars,line,labels,trend,unit="",barColor="#2a6f97",lineColor="#c14953",trendColor="#1b998b",yLabel=""}){
+  clear(svg);
+  const W=+svg.getAttribute("viewBox").split(" ")[2],H=+svg.getAttribute("viewBox").split(" ")[3];
+  const m={l:46,r:12,t:14,b:30},iw=W-m.l-m.r,ih=H-m.t-m.b;
+  const allv=[...bars,...line].filter(v=>v!=null);
+  if(!allv.length){txt(svg,W/2,H/2,"no data",{"text-anchor":"middle"});return}
+  const {ticks,lo,hi}=niceTicks(Math.min(0,...allv),Math.max(...allv));
+  const x=i=>m.l+iw*(i+.5)/labels.length, y=v=>m.t+ih*(1-(v-lo)/(hi-lo));
+  ticks.forEach(v=>{el("line",{x1:m.l,x2:W-m.r,y1:y(v),y2:y(v),stroke:"#e3e9e5","stroke-width":1},svg);txt(svg,m.l-6,y(v)+3.5,fmt(v),{"text-anchor":"end","font-size":10})});
+  labels.forEach((lb,i)=>{const xm=(m.l+x(i))/1;if(i%Math.ceil(labels.length/12)===0||labels.length<=12)txt(svg,x(i),H-8,lb,{"text-anchor":"middle","font-size":10})});
+  if(bars.some(v=>v!=null))bars.forEach((v,i)=>{if(v==null)return;el("rect",{x:x(i)-iw/labels.length*.38,y:y(Math.max(0,v)),width:iw/labels.length*.76,height:Math.abs(y(v)-y(0)),fill:barColor,opacity:.85,rx:2},svg)});
+  // trend line (regression over index)
+  if(trend&&trend.length>2){
+    const pts=trend.map((v,i)=>v==null?null:[i,v]).filter(Boolean);
+    if(pts.length>2){const n=pts.length;const sx=pts.reduce((a,p)=>a+p[0],0),sy=pts.reduce((a,p)=>a+p[1],0);const sxx=pts.reduce((a,p)=>a+p[0]*p[0],0),sxy=pts.reduce((a,p)=>a+p[0]*p[1],0);const sl=(n*sxy-sx*sy)/(n*sxx-sx*sx),ic=(sy-sl*sx)/n;
+      el("line",{x1:x(0),x2:x(trend.length-1),y1:y(sl*0+ic),y2:y(sl*(trend.length-1)+ic),stroke:trendColor,"stroke-width":2,"stroke-dasharray":"6 4"},svg)}
+  }
+  if(line.some(v=>v!=null)){const pts=line.map((v,i)=>v==null?null:[x(i),y(v)]).filter(Boolean);el("polyline",{points:pts.map(p=>p.join(",")).join(" "),fill:"none",stroke:lineColor,"stroke-width":2.2,"stroke-linejoin":"round"},svg);
+    line.forEach((v,i)=>{if(v!=null)el("circle",{cx:x(i),cy:y(v),r:2.6,fill:lineColor},svg)})}
+  txt(svg,W/2,10,unit,{"text-anchor":"middle","font-size":10,fill:"#8a979e"});
+}
+
+/* horizontal bar */
+function hbar(svg,rows,{unit="",color="#1b998b",max=null}){
+  clear(svg);
+  const W=+svg.getAttribute("viewBox").split(" ")[2];
+  const rowH=26,pad=150;let y=4;
+  const mx=max||Math.max(...rows.map(r=>r.v));
+  rows.forEach(r=>{
+    txt(svg,pad-8,y+15,LANG===BN?r.bn:r.en,{"text-anchor":"end","font-size":11,fill:"#1b2a41"});
+    el("rect",{x:pad,y:y+3,width:Math.max(2,(W-pad-60)*r.v/mx),height:15,fill:color,opacity:.9,rx:3},svg);
+    txt(svg,pad+Math.max(2,(W-pad-60)*r.v/mx)+6,y+15,fmt(r.v,1)+" "+unit,{"font-size":10});
+    y+=rowH;
+  });
+  svg.setAttribute("viewBox",`0 0 ${W} ${y+6}`);
+}
+
+/* ---------------------- MAP ---------------------- */
+function mapValue(d,ind){
+  const c=d.climate;
+  if(ind==="salinity")return d.salinity_risk.class;
+  if(ind==="rabi_rain")return c.season_rain_mm.rabi;
+  if(ind==="heat")return c.heat_days_clim10;
+  if(ind==="onset")return c.onset_clim10_doy;
+  if(ind==="water_deficit")return Math.round(c.season_eto_mm.rabi-c.season_rain_mm.rabi);
+  return 0;
+}
+function drawMap(){
+  const svg=document.getElementById("map");clear(svg);
+  const ind=document.getElementById("mapIndicator").value;
+  const W=980,H=560;
+  const X=lon=>(lon-87.5)/5.5*W+20, Y=lat=>(27-lat)/7*H+20;
+  // stylized Bangladesh outline (simplified anchor points)
+  const outline="M "+X(88.4)+","+Y(26.6)+" L "+X(88.9)+","+Y(26.4)+" L "+X(89.6)+","+Y(26.2)+" L "+X(90.4)+","+Y(26.5)+" L "+X(91.0)+","+Y(26.3)+" L "+X(91.6)+","+Y(25.9)+" L "+X(92.1)+","+Y(25.1)+" L "+X(92.4)+","+Y(24.4)+" L "+X(92.3)+","+Y(23.7)+" L "+X(92.5)+","+Y(23.0)+" L "+X(92.6)+","+Y(22.2)+" L "+X(92.2)+","+Y(21.5)+" L "+X(92.0)+","+Y(20.9)+" L "+X(91.8)+","+Y(21.6)+" L "+X(91.5)+","+Y(22.1)+" L "+X(91.1)+","+Y(22.3)+" L "+X(90.8)+","+Y(22.6)+" L "+X(90.6)+","+Y(22.4)+" L "+X(90.2)+","+Y(22.1)+" L "+X(89.8)+","+Y(21.9)+" L "+X(89.4)+","+Y(21.8)+" L "+X(89.0)+","+Y(22.0)+" L "+X(88.8)+","+Y(22.5)+" L "+X(88.9)+","+Y(23.0)+" L "+X(88.7)+","+Y(23.5)+" L "+X(88.9)+","+Y(24.1)+" L "+X(88.5)+","+Y(24.6)+" L "+X(88.0)+","+Y(25.0)+" L "+X(88.2)+","+Y(25.5)+" L "+X(88.0)+","+Y(26.0)+" L "+X(88.4)+","+Y(26.6)+" Z";
+  el("path",{d:outline,fill:"#d9ead8",stroke:"#8fae8b","stroke-width":2,"stroke-linejoin":"round",opacity:.75},svg);
+  txt(svg,W-95,H-14,"Bay of Bengal",{"font-size":12,fill:"#7ba3b8","font-style":"italic"});
+  txt(svg,30,H-14,"INDIA",{"font-size":11,fill:"#a9b8a7"});
+  txt(svg,X(91.8),Y(26.0)+18,"Meghalaya",{"font-size":9,fill:"#a9b8a7"});
+  // values for colour scale
+  const vals=districts.map(d=>mapValue(d,ind));
+  let scale;
+  if(ind==="salinity"){
+    scale=v=>["#a8dadc","#76c893","#f4a261","#e76f51","#c14953"][v];
+  }else{
+    const lo=Math.min(...vals),hi=Math.max(...vals);
+    scale=v=>{const r=(hi-v)/(hi-lo||1); // low value = red for deficits? choose: high=blue for rain
+      if(ind==="heat"||ind==="onset"||ind==="water_deficit") {const q=(v-lo)/(hi-lo||1);return q<.25?"#76c893":q<.5?"#b7e4a4":q<.75?"#f4a261":"#e76f51"}
+      const q=(hi-v)/(hi-lo||1);return q<.25?"#e76f51":q<.5?"#f4a261":q<.75?"#90e0b0":"#1b998b";
+    };
+  }
+  // district circles
+  const tip=document.getElementById("mapTip");
+  districts.forEach(d=>{
+    const v=mapValue(d,ind),c=scale(v);
+    const g=el("g",{cursor:"pointer"},svg);
+    el("circle",{cx:X(d.lon),cy:Y(d.lat),r:13,fill:c,stroke:"#ffffff","stroke-width":2,opacity:.92},g);
+    el("circle",{cx:X(d.lon),cy:Y(d.lat),r:13,fill:"none",stroke:"#0b2545","stroke-width":.6,opacity:.35},g);
+    g.addEventListener("mouseenter",ev=>{
+      tip.style.opacity=1;
+      tip.innerHTML=`<b>${LANG===BN?d.bn:d.name}</b> (${d.division})<br>`+mapTipText(d,ind);
+      const wrap=document.getElementById("mapwrap").getBoundingClientRect();
+      tip.style.left=Math.min(ev.clientX-wrap.left+14,wrap.width-240)+"px";
+      tip.style.top=(ev.clientY-wrap.top-10)+"px";
+    });
+    g.addEventListener("mouseleave",()=>tip.style.opacity=0);
+    g.addEventListener("click",()=>{CURRENT=d.name;showTab("district")});
+  });
+  // legend
+  const lg=document.getElementById("mapLegend");lg.innerHTML="";
+  if(ind==="salinity"){
+    [["#a8dadc",t("low")],["#76c893",t("lm")],["#f4a261",t("mod")],["#e76f51",t("high")],["#c14953",t("vhigh")]].forEach(([c,l])=>lg.innerHTML+=`<span><i class="dot" style="background:${c}"></i>${l}</span>`);
+  }else{
+    const lo=Math.min(...vals),hi=Math.max(...vals);
+    lg.innerHTML=`<span>${LANG===BN?"নিম্ন":"low"}: ${fmt(lo,1)} → ${LANG===BN?"উচ্চ":"high"}: ${fmt(hi,1)}</span><span><i class="dot" style="background:#76c893"></i>${LANG===BN?"অনুকূল":"favourable"}</span><span><i class="dot" style="background:#f4a261"></i>${LANG===BN?"মাঝারি":"moderate"}</span><span><i class="dot" style="background:#e76f51"></i>${LANG===BN?"চাপ":"stress"}</span>`;
+  }
+}
+function mapTipText(d,ind){
+  const c=d.climate,s=d.salinity_risk;
+  if(ind==="salinity")return `${LANG===BN?"ঝুঁকি":"risk"}: <b>${s.label}</b> · ${LANG===BN?"মূল":"baseline"} ${d.baseline_salinity_dsm} dS/m`;
+  if(ind==="rabi_rain")return `${LANG===BN?"রবি বৃষ্টি":"Rabi rain"}: <b>${fmt(c.season_rain_mm.rabi,1)} mm</b>`;
+  if(ind==="heat")return `${LANG===BN?"উষ্ণ দিন":"Hot days"}: <b>${fmt(c.heat_days_clim10,1)}</b> /${LANG===BN?"বছর":"yr"}`;
+  if(ind==="onset")return `${LANG===BN?"বর্ষার সূচনা":"Onset"}: <b>DOY ${fmt(c.onset_clim10_doy,0)}</b> (±${fmt(c.onset_clim10_std,0)} ${LANG===BN?"দিন":"days"})`;
+  if(ind==="water_deficit")return `${LANG===BN?"পানির ঘাটতি":"Deficit"}: <b>${fmt(mapValue(d,ind),0)} mm</b>`;
+  return "";
+}
+
+/* ---------------------- DISTRICT ---------------------- */
+function doyToDate(doy){
+  const m=[31,59,90,120,151,181,212,243,273,304,334,365];
+  let mo=0;while(mo<11&&doy>m[mo])mo++;
+  return (LANG===BN?MONTHS_BN[mo]:MONTHS_EN[mo])+" "+Math.round(doy-m[mo-1]||doy);
+}
+function renderDistrict(){
+  const d=getD(),c=d.climate,s=d.salinity_risk;
+  document.getElementById("districtSelect").value=CURRENT;
+  const zb=document.getElementById("zoneBadges");
+  const zoneEn={"coastal-saline":"Coastal saline belt","coastal":"Coastal","coastal-inland":"Coastal-inland","central":"Central plains","barind":"Barind Tract (drought-prone)","haor":"Haor wetlands","hilly":"Chittagong Hill Tract"};
+  const zoneBn={"coastal-saline":"উপকূলীয় লবণাক্ত অঞ্চল","coastal":"উপকূল","coastal-inland":"উপকূল-অভ্যন্তর","central":"কেন্দ্রীয় সমভূমি","barind":"বরেন্দ্র অঞ্চল (খরা-প্রবণ)","haor":"হাওর অঞ্চল","hilly":"পাহাড়ি অঞ্চল"};
+  const salBn={High:"উচ্চ",Low:"নিম্ন","Very High":"অতি উচ্চ",Moderate:"মাঝারি","Low-Moderate":"কম-মাঝারি"};
+  zb.innerHTML=`<span class="badge b-navy">${d.division_bn} / ${d.division}</span>
+    <span class="badge b-blue">${LANG===BN?zoneBn[d.zone]:zoneEn[d.zone]}</span>
+    <span class="badge ${s.class>=3?"b-red":s.class===2?"b-sand":"b-teal"}">${LANG===BN?"লবণ ঝুঁকি":"salinity"}: ${LANG===BN?salBn[s.label]:s.label}</span>`;
+  // KPI cards
+  const kpis=[
+    {v:fmt(c.season_rain_mm.rabi,0),l:t("kpiRain"),s:"mm"},
+    {v:fmt(c.season_eto_mm.rabi,0),l:t("kpiEto"),s:"mm (FAO-56)"},
+    {v:fmt(c.heat_days_clim10,1),l:t("kpiHeat"),s:LANG===BN?"দিন ≥ ৩৫°সে":"days ≥ 35°C"},
+    {v:c.onset_clim10_doy?("≈ "+doyToDate(c.onset_clim10_doy)):"—",l:t("kpiOnset"),s:"± "+fmt(c.onset_clim10_std,0)+" d"},
+    {v:LANG===BN?salBn[s.label]:s.label,l:t("kpiSal"),s:""},
+    {v:fmt(d.baseline_salinity_dsm,1),l:t("kpiBase"),s:"dS/m"},
+  ];
+  document.getElementById("kpiCards").innerHTML=kpis.map(k=>`<div class="kpi"><div class="v">${k.v}</div><div class="l">${k.l}</div><div class="s">${k.s}</div></div>`).join("");
+  // charts
+  const mlabels=LANG===BN?MONTHS_BN:MONTHS_EN;
+  comboChart(document.getElementById("chartWater"),{
+    bars:c.pre_clim_mm, line:c.eto_clim_mm_day.map(v=>v?v*30.4:null), labels:mlabels,
+    unit:t("rainMM")+"  |  — "+t("etoMM")});
+  // monsoon calendar
+  const svg=document.getElementById("chartMonsoon");clear(svg);
+  const W=520,H=300,m={l:46,r:14,t:18,b:34},iw=W-m.l-m.r,ih=H-m.t-m.b;
+  const y=v=>m.t+ih*(1-(v-120)/(300-120));
+  [150,200,250,300].forEach(v=>{el("line",{x1:m.l,x2:W-m.r,y1:y(v),y2:y(v),stroke:"#e3e9e5"},svg);txt(svg,m.l-6,y(v)+3.5,fmt(v),{"text-anchor":"end","font-size":10})});
+  mlabels.forEach((lb,i)=>txt(svg,m.l+iw*(i+.5)/12,H-10,lb,{"text-anchor":"middle","font-size":10}));
+  // transplanting window band: onset -> withdrawal (avg)
+  const on=c.onset_clim10_doy,wd=c.withdraw_clim10_doy;
+  if(on&&wd){const x=doy=>m.l+iw*(doy-120)/(300-120);
+    el("rect",{x:x(on),y:y(270),width:x(wd)-x(on),height:22,fill:"#1b998b",opacity:.22,rx:4},svg);
+    el("line",{x1:x(on),x2:x(on),y1:y(270),y2:y(140),stroke:"#2d6a4f","stroke-width":2.5,"stroke-dasharray":"5 3"},svg);
+    el("line",{x1:x(wd),x2:x(wd),y1:y(270),y2:y(140),stroke:"#b26b2a","stroke-width":2.5,"stroke-dasharray":"5 3"},svg);
+    txt(svg,x(on)+4,y(140)-6,LANG===BN?"বর্ষার সূচনা":"onset "+Math.round(on),{"font-size":10,fill:"#2d6a4f","font-weight":700});
+    txt(svg,x(wd)-4,y(140)-6,LANG===BN?"বর্ষার অন্ত":"withdrawal",{"font-size":10,fill:"#b26b2a","text-anchor":"end","font-weight":700});
+    txt(svg,(x(on)+x(wd))/2,y(270)+15,LANG===BN?"নিরাপদ আমন রোপণ সময়":"safe T. Aman transplanting window",{"text-anchor":"middle","font-size":10,fill:"#1b2a41"});
+  }
+  // onset per year dots
+  const oy=c.onset_years_doy;
+  Object.keys(oy).filter(yy=>+yy>=2011&&oy[yy]).forEach(yy=>{
+    el("circle",{cx:m.l+iw*(oy[yy]-120)/(300-120),cy:y(155),r:3.4,fill:"#2a6f97",opacity:.7},svg)
+  });
+  // rabi rain trend
+  comboChart(document.getElementById("chartRabi"),{
+    bars:c.rabi_rain_recent15_mm, line:c.rabi_rain_recent15_mm, labels:c.years_recent15.map(String),
+    trend:c.rabi_rain_recent15_mm, unit:(d.trends.rabi_aridity? "":"")+(LANG===BN?"রবি বৃষ্টি (মিমি) — থিল-সেন প্রবণতা":"Rabi rain (mm) — Theil-Sen trend")});
+  comboChart(document.getElementById("chartHeat"),{
+    bars:c.heat_days_recent15, line:c.heat_days_recent15, labels:c.years_recent15.map(String),
+    trend:c.heat_days_recent15, unit:LANG===BN?"উষ্ণ দিন (তাপমাত্রা ≥ ৩৫°সে) — থিল-সেন প্রবণতা":"hot days (Tmax ≥ 35°C) — Theil-Sen trend",barColor:"#e76f51",lineColor:"#c14953",trendColor:"#9c5c17"});
+  // full record
+  comboChart(document.getElementById("chartFull"),{
+    bars:Object.values(c.rain_full_mm), line:Object.values(c.rain_full_mm), labels:Object.keys(c.rain_full_mm),
+    trend:Object.values(c.rain_full_mm), unit:LANG===BN?"বার্ষিক বৃষ্টি (মিমি), সম্পূর্ণ রেকর্ড — প্রবণতার রেখা পণ্যের অসমসত্ত্বতা প্রতিফলিত করে":"annual rainfall (mm), full record — the trend line reflects the product inhomogeneity discussed in Data & Methods",barColor:"#7fb3c8"});
+  // audit table
+  const at=document.getElementById("auditTable");
+  at.innerHTML=`<tr><th>${LANG===BN?"দশক":"Decade"}</th><th>${LANG===BN?"গড় বার্ষিক বৃষ্টি (মিমি)":"Mean annual rain (mm)"}</th><th>${LANG===BN?"গড় তাপমাত্রা (°সে)":"Mean temp (°C)"}</th></tr>`+
+    d.homogeneity.map(h=>`<tr><td>${h.decade}</td><td>${fmt(h.rain_mm,0)}</td><td>${fmt(h.t2m_c,2)}</td></tr>`).join("");
+}
+
+/* ---------------------- ROTATION EXPLORER ---------------------- */
+let WEIGHTS={water:20,salinity:25,profit:20,soil:15,risk:20};
+function sliderRow(key,labelKey){
+  return `<div><label>${t(labelKey)}: <span class="wv" id="wv-${key}">${WEIGHTS[key]}</span></label>
+  <input type="range" min="0" max="50" value="${WEIGHTS[key]}" oninput="WEIGHTS['${key}']=+this.value;document.getElementById('wv-${key}').textContent=this.value;renderRotCards()"></div>`;
+}
+function renderRotations(){
+  if(document.getElementById("rotDistrict").options.length===0){
+    const sel=document.getElementById("rotDistrict");
+    districts.forEach(d=>{const o=document.createElement("option");o.value=d.name;o.textContent=LANG===BN?`${d.bn} (${d.division_bn})`:`${d.name} (${d.division})`;sel.appendChild(o)});
+  }
+  document.getElementById("rotDistrict").value=CURRENT;
+  document.getElementById("slidersBox").innerHTML=
+    sliderRow("water","wWater")+sliderRow("salinity","wSal")+sliderRow("profit","wProfit")+
+    sliderRow("soil","wSoil")+sliderRow("risk","wRisk");
+  const salInput=document.getElementById("soilSal");
+  salInput.value=getD().baseline_salinity_dsm;
+  updateSalNote();
+  renderRotCards();
+}
+function updateSalNote(){
+  document.getElementById("salDefaultNote").textContent=
+    LANG===BN?`(জেলার প্রচলিত মান ${getD().baseline_salinity_dsm} dS/m — SRDI থেকে সংকলিত; আপনার মাটি পরীক্ষার মান বসান)`:
+    `(district default ${getD().baseline_salinity_dsm} dS/m, compiled from SRDI; enter your own soil-test value)`;
+}
+function recomputeSalinity(){
+  updateSalNote();renderRotCards();
+}
+function recomputeRotation(r,d,sal){
+  // full client-side recomputation with user salinity (mirrors crop_library.py)
+  const salRabi=sal*1.35,salK2=sal*0.55,salK1=sal*0.9;
+  const crops=[CROPS[r.k2],CROPS[r.rabi],CROPS[r.k1]];
+  const eto=d.climate.eto_clim_mm_day,pre=d.climate.pre_clim_mm;
+  let irr=0,etc=0,pe=0,gm=0,soil=0,heat=0,sys=[];
+  crops.forEach((cp,i)=>{
+    const ssal=[salK2,salRabi,salK1][i];
+    if(cp.family==="fallow"){soil+=cp.soil;return}
+    const months=monthsSpan(cp.sow,cp.harv);
+    months.forEach(mo=>{const e=eto[mo-1],p=pre[mo-1];if(e==null)return;etc+=cp.kc*e*30;pe+=effRain(p)});
+    let i2=Math.max(0,etc-pe); // per-crop temp; recompute below properly
+    // reset per-crop accumulators (recompute cleanly)
+    let etcC=0,peC=0;
+    months.forEach(mo=>{const e=eto[mo-1],p=pre[mo-1];if(e==null)return;etcC+=cp.kc*e*30;peC+=effRain(p)});
+    let ic=Math.max(0,etcC-peC);
+    if(cp.irr==="full")ic*=1.15;else if(cp.irr==="partial")ic*=.85;else if(cp.irr==="light")ic*=.7;else if(cp.irr==="rainfed")ic*=.5;else ic=0;
+    irr+=ic;pe+=0;
+    const sy=maas(cp.ect,cp.b,ssal);
+    sys.push(sy);gm+=cp.gm*(sy/100);
+    const hs=cp.heatW[0],he=cp.heatW[1];
+    heat+=Math.max(0,he-hs)/12*cp.heatS*((d.climate.heat_days_clim10||0)/100);
+    soil+=cp.soil;
+  });
+  const syAvg=sys.length?sys.reduce((a,b)=>a+b,0)/sys.length:100;
+  if(crops.filter(c=>c.family==="cereal").length>=2)soil-=0.6;
+  return{irrigation_mm:Math.round(irr),salinity_yield_pct:Math.round(syAvg*10)/10,
+    gross_margin_bdt:Math.round(gm),soil_health:Math.round((soil+1.5)*100)/100,
+    heat_risk_index:Math.round(heat*1000)/1000};
+}
+function renderRotCards(){
+  const d=getD();
+  const sal=parseFloat(document.getElementById("soilSal").value)||d.baseline_salinity_dsm;
+  const pool=d.rotations.map(r=>{
+    const m=recomputeRotation(r,d,sal);
+    return Object.assign({},r,m);
+  });
+  // normalize + score
+  const minmax=arr=>{const lo=Math.min(...arr),hi=Math.max(...arr);return v=>hi-lo<1e-9?50:100*(v-lo)/(hi-lo)};
+  const nI=minmax(pool.map(r=>r.irrigation_mm)),nS=minmax(pool.map(r=>r.salinity_yield_pct)),
+        nG=minmax(pool.map(r=>r.gross_margin_bdt)),nH=minmax(pool.map(r=>r.soil_health)),
+        nR=minmax(pool.map(r=>r.heat_risk_index));
+  const W=WEIGHTS,tw=Object.values(W).reduce((a,b)=>a+b,0)||1;
+  pool.forEach(r=>{
+    r.scores={water:Math.round(100-nI(r.irrigation_mm)),salinity:Math.round(nS(r.salinity_yield_pct)),
+      profit:Math.round(nG(r.gross_margin_bdt)),soil:Math.round(nH(r.soil_health)),risk:Math.round(100-nR(r.heat_risk_index))};
+    r.score=Math.round(((W.water*r.scores.water+W.salinity*r.scores.salinity+W.profit*r.scores.profit+W.soil*r.scores.soil+W.risk*r.scores.risk)/tw)*10)/10;
+  });
+  pool.sort((a,b)=>b.score-a.score);
+  const bau=pool.find(r=>r.business_as_usual);
+  const box=document.getElementById("rotCards");
+  box.innerHTML=pool.slice(0,10).map((r,i)=>{
+    const names=LANG===BN?r.names_bn:r.names_en;
+    const arrow=`<span class="arrow">→</span>`;
+    const dGM=bau&&bau.gross_margin_bdt?Math.round((r.gross_margin_bdt/bau.gross_margin_bdt-1)*100):null;
+    const dIrr=bau?r.irrigation_mm-bau.irrigation_mm:null;
+    return `<div class="rot ${i===0?"top":""} ${r.business_as_usual?"bau":""}">
+      <div class="seq">${i+1}. ${names[0]} ${arrow} ${names[1]} ${arrow} ${names[2]}
+        ${r.business_as_usual?`<span class="badge b-sand" style="margin-left:8px">${t("currentPractice")}</span>`:""}</div>
+      <div class="bnname">${LANG===BN?r.names_en.join(" → "):r.names_bn.join(" → ")}</div>
+      <div class="metrics">
+        <span>💧 ${t("irrigation")}: <b>${fmt(r.irrigation_mm,0)} mm</b></span>
+        <span>🧂 ${t("salYield")}: <b>${fmt(r.salinity_yield_pct,0)}%</b></span>
+        <span>💰 ${t("income")}: <b>${fmt(r.gross_margin_bdt/1000,1)}k ৳</b></span>
+        <span>🌱 ${t("soilH")}: <b>${fmt(r.soil_health,1)}</b></span>
+        <span>🌡 ${t("heatRisk")}: <b>${fmt(r.heat_risk_index,2)}</b></span>
+        <span>⭐ ${t("score")}: <b>${fmt(r.score,1)}</b></span>
+      </div>
+      ${dGM!==null&&!r.business_as_usual?`<div class="delta ${dGM<0?"neg":""}">${t("vsBau")}: ${dGM>=0?"+":""}${fmt(dGM,0)}% ${t("income")}${dIrr>0?` · +${fmt(dIrr,0)} mm ${t("irrigation")}`:dIrr<0?` · −${fmt(-dIrr,0)} mm ${t("irrigation")}`:""}</div>`:""}
+      <div class="scorebar"><div style="width:${r.score}%"></div></div>
+    </div>`;
+  }).join("");
+}
+
+/* ---------------------- init ---------------------- */
+function init(){
+  const sel=document.getElementById("districtSelect");
+  districts.forEach(d=>{const o=document.createElement("option");o.value=d.name;o.textContent=LANG===BN?`${d.bn} (${d.division_bn})`:`${d.name} (${d.division})`;sel.appendChild(o)});
+  applyI18n();drawMap();
+  const notes={
+    mapNote:{en:"Circle position = district centroid (real coordinates). Circle colour = indicator level. Click a district to open its dashboard. Neighbouring districts inside the same NASA POWER grid cell (0.5° × 0.625°) share identical values.",bn:"বৃত্তের অবস্থান = জেলার কেন্দ্র (প্রকৃত স্থানাঙ্ক)। বৃত্তের রং = সূচকের মান। জেলায় ক্লিক করলে ড্যাশবোর্ড খুলবে। একই NASA POWER গ্রিড সেলে (০.৫° × ০.৬২৫°) থাকা পার্শ্ববর্তী জেলার মান একই হবে।"},
+    wcNote:{en:"Monthly rainfall (bars) and reference evapotranspiration ETo (line) for 2016–2025. The dry-season gap between the ETo line and the rainfall bars is what crops must bridge with irrigation — or avoid through crop choice.",bn:"২০১৬–২০২৫ সালের মাসিক বৃষ্টিপাত (স্তম্ভ) ও সম্ভাব্য বাষ্পীভবন ETo (রেখা)। শুকনো মৌসুমে ETo রেখা ও বৃষ্টির স্তম্ভের ফাঁকই সেচে পূরণ করতে হয় — অথবা সঠিক ফসল নির্বাচনে এড়ানো যায়।"},
+    mcNote:{en:"When monsoon rains reliably start (onset) and end (withdrawal), from daily NASA rainfall. The band shows the safe transplanting window for rainfed T. Aman rice.",bn:"দৈনিক নাসা বৃষ্টির ডেটা থেকে বর্ষার নির্ভরযোগ্য সূচনা ও সমাপ্তি। ব্যান্ডটি বৃষ্টি-নির্ভর আমন ধানের নিরাপদ রোপণ সময় দেখায়।"},
+    rrNote:{en:"Recent tendencies tested with the Mann-Kendall test and Theil-Sen slope. Indicative only — see Data & Methods for why we do not extrapolate the full 45-year reanalysis record.",bn:"সাম্প্রতিক প্রবণতা ম্যান-কেন্ডাল পরীক্ষা ও থিল-সেন ঢাল দিয়ে যাচাই করা। শুধু নির্দেশক — কেন আমরা সম্পূর্ণ ৪৫ বছরের রেকর্ড থেকে প্রবণতা বলি না, তা 'ডেটা ও পদ্ধতি' ট্যাবে দেখুন।"},
+    hdNote:{en:"Days hot enough to sterilise rice flowers (Yoshida 1981). Recent decade average shown; 35°C at flowering is the critical threshold for Boro and T. Aman.",bn:"ধানের ফুল বন্ধ্যা করার মতো উষ্ণ দিন (Yoshida 1981)। ৩৫°সে সময় ফুল আসা বোরো ও আমনের জন্য সংকট সীমা।"},
+    fullNote:{en:"We show the complete 45-year series — and the audit table below — because our homogeneity check found large multi-decadal discontinuities in NASA POWER over this region. Our advisory engine therefore uses the recent window (2016–2025) for current conditions. This is scientific transparency, not a weakness: always audit your data before telling farmers the climate has changed.",bn:"আমরা সম্পূর্ণ ৪৫ বছরের সিরিজ এবং নিচের অডিট টেবিল দেখাই কারণ এই অঞ্চলে NASA POWER-এ বড় ধরনের দশকীয় অসমসত্ত্বতা আমাদের পরীক্ষায় ধরা পড়েছে। তাই পরামর্শ ইঞ্জিন বর্তমান অবস্থার জন্য সাম্প্রতিক সময়কাল (২০১৬–২০২৫) ব্যবহার করে। এটি বৈজ্ঞানিক স্বচ্ছতা: কৃষককে জলবায়ু বদলেছে বলার আগে নিজের ডেটা যাচাই করুন।"},
+    rotNote:{en:"Move the sliders to tell MOUSUMI what matters most to you — saving water, fighting salinity, income, soil health, or lowering risk. Every plan is scored live from your district's NASA data, your soil salinity (editable below), FAO-56 water balance and FAO-29 crop salt-tolerance science.",bn:"স্লাইডার সরিয়ে বলুন আপনার কাছে কোনটা বেশি দরকার — পানি বাঁচানো, লবণ সহন, আয়, মাটির স্বাস্থ্য, না ঝুঁকি কমানো। প্রতিটি পরিকল্পনা আপনার জেলার নাসা ডেটা, আপনার মাটির লবণাত্তর (নিচে পরিবর্তনযোগ্য), FAO-56 পানি ভারসাম্য ও FAO-29 লবণ-সহিষ্ণুতা বিজ্ঞান থেকে সরাসরি মূল্যায়িত হয়।"}
+  };
+  Object.keys(notes).forEach(k=>{const elx=document.getElementById(k);elx.setAttribute("data-noteen",notes[k].en);elx.setAttribute("data-notebn",notes[k].bn)});
+  applyI18n();
+}
+init();
+</script>
+</body>
+</html>
